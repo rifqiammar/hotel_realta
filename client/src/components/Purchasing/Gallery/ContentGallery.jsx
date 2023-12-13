@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getListGallery } from "../../../actions/purchasing/galleryAction";
 import currency from "../../../helper/currency";
+import { FaShoppingCart } from "react-icons/fa";
 
 import SearchBar from "../SearchBar";
 import Pagination from "../Pagination";
 
-const ContentGallery = ({ setChartHandle }) => {
+const ContentGallery = ({ dataCart, setChartHandle }) => {
   const { getListGalleryResult, getListGalleryLoading, getListGalleryError } = useSelector((state) => state.galleryReducers);
 
   const [keyword, setKeyword] = useState("");
@@ -35,6 +36,22 @@ const ContentGallery = ({ setChartHandle }) => {
             <option value="DESC">Price High To Low</option>
             <option value="ASC">Price Low To High</option>
           </select>
+          <div style={{ width: "3rem", marginLeft: "10rem" }}>
+            {dataCart.length === 0 ? (
+              <button class="buttonClear mt-2" style={{ border: "0.5px solid grey ", width: "2rem", height: "2rem", borderRadius: "5px" }}>
+                <FaShoppingCart />
+              </button>
+            ) : (
+              <>
+                <div style={{ position: "absolute", marginLeft: "2rem", width: "20px", height: "22px", backgroundColor: "red", borderRadius: "50%" }}>
+                  <p style={{ color: "white", fontWeight: "bold", marginLeft: "5px" }}>{dataCart.length}</p>
+                </div>
+                <button class="buttonClear mt-2" data-bs-toggle="offcanvas" style={{ border: "0.5px solid grey ", width: "2rem", height: "2rem", borderRadius: "5px" }} data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">
+                  <FaShoppingCart />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -42,7 +59,7 @@ const ContentGallery = ({ setChartHandle }) => {
       <div className="container mt-3">
         <div className="row">
           {getListGalleryResult ? (
-            getListGalleryResult.data.map((e) => {
+            getListGalleryResult.data.map((e, index) => {
               return (
                 <div className="col-md-3 my-3 ">
                   <div className="card" style={{ width: "18rem" }}>
@@ -60,8 +77,18 @@ const ContentGallery = ({ setChartHandle }) => {
                         </p>
                       </div>
                       <h6 className="h6">{currency(e.vepro_price)}</h6>
-
-                      <button class="btn btn-primary mt-3 float-end" onClick={() => setChartHandle(e)} data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">
+                      {/* <button class="btn btn-primary mt-3 float-end" onClick={() => setChartHandle(e)} data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">
+                        Add To Chart
+                      </button> */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setChartHandle(e, index);
+                        }}
+                        class="btn btn-primarybtn btn-primary mt-3 float-end"
+                        data-bs-toggle="modal"
+                        data-bs-target="#addTocartModal"
+                      >
                         Add To Chart
                       </button>
                     </div>

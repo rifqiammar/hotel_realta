@@ -40,3 +40,25 @@ export const getListGallery = (page, search, urutan) => {
     }
   };
 };
+
+export const addOrders = async (dataCart, stockId) => {
+  console.log(dataCart, stockId);
+  const { pohe_total_amount, pode_line_total, pode_order_qty, pode_price, pohe_subtotal, pohe_tax, pohe_vendor_id } = dataCart;
+  const data = {
+    pohe_subtotal,
+    pohe_tax,
+    pohe_total_amount,
+    pohe_emp_id: 1,
+    pohe_status: 1,
+    pohe_vendor_id,
+    pode_stock_id: stockId,
+    pode_price,
+    pode_order_qty,
+    pode_line_total,
+  };
+  try {
+    await axios.post("http://localhost:3005/purchasing/orderheader", data);
+  } catch (error) {
+    console.log(`Error: ${error.message}`);
+  }
+};

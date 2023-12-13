@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { addOrders } from "../../../actions/purchasing/galleryAction";
 import axios from "axios";
 import { FaShoppingCart } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
@@ -6,97 +7,65 @@ import currency from "../../../helper/currency";
 import calculateTax from "../../../helper/calculateTax";
 import { useNavigate } from "react-router-dom";
 
-const CartBar = ({ dataCart, cartHandle }) => {
+const CartBar = ({ dataCart, cartHandle, qtyValue, qtStat }) => {
   const navigate = useNavigate();
+
+  useEffect(() => {}, [qtyValue, qtStat]);
+
+  const total = (price, qty) => {
+    const total = price * qty;
+    console.log({ price, qty }, total);
+    return currency(total);
+  };
 
   const requestOrderHandler = async () => {
     console.log("dari Handler", dataCart);
-    // Mengumpulkan Nama vendor ke dalam array
-    let dataVendorName = dataCart.map((e, i) => {
-      return e.data.vendor.vendor_name;
-    });
 
-    // Mencari nilai array yang sama
-    let filterData = dataVendorName.filter((e, i) => {
-      return dataVendorName.indexOf(e) !== i;
-    });
+    // // Mencari data dengan vendor yang sama
+    // const vendorDataName = dataCart.map((e) => {
+    //   return e.data.vendor.vendor_name;
+    // });
 
-    // Total Price Untuk Semua Item yang ada di chart
-    let totalPriceAll = dataCart
-      .map((e) => {
-        return e.data.vepro_price;
-      })
-      .reduce((acc, curr) => {
-        return acc + curr;
-      });
+    let tempCart = {};
 
-    dataVendorName.forEach(async (element, index) => {
-      if (dataVendorName.length >= 1 || filterData.length === 1) {
-        // // Mengambil / memilah data sesuai vendor
-        const getDataCart = dataCart.filter((dataE) => {
-          return element === dataE.data.vendor.vendor_name;
-        });
-        // // Penjumlahan sub total
-        let subTotal = getDataCart
-          .map((e) => {
-            return e.data.vepro_price;
-          })
-          .reduce((acc, curr) => {
-            return acc + curr;
-          });
-
-        // Jumlah Stock Barang yang di order
-        let qtyStock = getDataCart.length;
-
-        const VendorId = getDataCart.map((e) => {
-          return e.data.vepro_vendor_id;
-        });
-
-        const StockId = getDataCart.map((e) => {
-          return e.data.stock.stock_id;
-        })[0];
-        const veproPrice = getDataCart.map((e) => {
-          return e.data.vepro_price;
-        })[0];
-
-        // console.log(vendorNamecart);
-
-        console.log({ StockId: StockId });
-        console.log({ veproPrice });
-        console.log({ element });
-
-        console.log({ dataVendorName });
-        console.log({ filterData });
-
-        let total = calculateTax(subTotal, 0.1);
-
-        try {
-          const tax = 10;
-
-          await axios.post("http://localhost:3005/purchasing/orderheader", {
-            pohe_subtotal: subTotal,
-            pohe_tax: tax,
-            pohe_total_amount: total,
-            pohe_emp_id: 1,
-            pohe_status: 1,
-            pohe_vendor_id: VendorId[0],
-            pode_stock_id: StockId,
-            pode_price: veproPrice,
-            pode_order_qty: qtyStock,
-            pode_line_total: totalPriceAll,
-          });
-
-          navigate("/purchasing/listorder");
-        } catch (err) {
-          console.log(err);
-        }
-
-        console.log({ filterDataMasuk: filterData });
-        console.log({ getDataCartatas: getDataCart });
+    dataCart.forEach((element) => {
+      if (tempCart[element.data.vendor.vendor_name]) {
+        tempCart[element.data.vendor.vendor_name].pode_line_total = tempCart[element.data.vendor.vendor_name].pohe_subtotal + element.data.vepro_price * element.QtyProd;
+        tempCart[element.data.vendor.vendor_name].pode_stock_id.push({ pode_stock_id: element.data.stock.stock_id });
+        tempCart[element.data.vendor.vendor_name].pohe_total_amount += calculateTax(element.data.vepro_price * element.QtyProd, 0.1);
+      } else {
+        tempCart[element.data.vendor.vendor_name] = {
+          pohe_vendor_id: element.data.vendor.vendor_entity_id,
+          pohe_subtotal: element.data.vepro_price * element.QtyProd,
+          pohe_emp_id: 1,
+          pohe_status: 1,
+          pohe_tax: 10,
+          pode_order_qty: element.QtyProd,
+          pode_price: element.data.vepro_price,
+          pohe_total_amount: calculateTax(element.data.vepro_price * element.QtyProd, 0.1),
+          pode_stock_id: [
+            {
+              pode_stock_id: element.data.stock.stock_id,
+            },
+          ],
+        };
       }
     });
-    console.log({ dataCartBawah: dataCart });
-    console.log({ dataVendorNameBawah: dataVendorName });
+
+    // Mengirim Ke Api, Looping Isi dari tempData
+    for (const key in tempCart) {
+      // console.log(`${key}`, tempCart[key]);
+      if (tempCart[key].pode_stock_id.length > 1) {
+        tempCart[key].pode_stock_id.forEach((e) => {
+          addOrders(tempCart[key], e.pode_stock_id);
+        });
+      } else {
+        addOrders(tempCart[key], tempCart[key].pode_stock_id[0].pode_stock_id);
+      }
+    }
+
+    // Jika Data Berhasil Dikirim Maka, Tendang ke Halaman ListOrder
+    navigate("/purchasing/listorder");
   };
 
   return (
@@ -113,7 +82,7 @@ const CartBar = ({ dataCart, cartHandle }) => {
 
           {/* Show Data */}
           {dataCart.length !== 0
-            ? dataCart.map((e) => {
+            ? dataCart.map((e, index) => {
                 return (
                   <div className="container mb-5" key={e.data.vepro_id}>
                     <h5 style={{ fontSize: "1.4rem" }}>{e.data.stock.stock_name}</h5>
@@ -121,18 +90,28 @@ const CartBar = ({ dataCart, cartHandle }) => {
                     <div className="row">
                       <p className="col" style={{ fontSize: "1rem ", fontWeight: "bold", marginLeft: "1.3rem" }}>
                         {currency(e.data.vepro_price)}
-                        <span className="mx-2" style={{ fontSize: "0.8rem" }}>
-                          X
+                        <span className="mx-2 " style={{ fontSize: "0.8rem" }}>
+                          X{" "}
+                          <span className="fs-6" style={{ fontSize: "0.9rem" }}>
+                            {e.QtyProd}
+                          </span>
                         </span>
-                        1
                         <span className="mx-2" style={{ fontSize: "0.8rem" }}>
                           =
                         </span>
-                        <span className="mr-3">{currency(e.data.vepro_price)}</span>
-                        <button
+                        <span className="mr-3">{total(e.data.vepro_price, e.QtyProd)}</span>
+                        {/* <button
                           style={{ border: "0.8px solid red" }}
                           onClick={() => {
                             cartHandle(e.data.stock.stock_name);
+                          }}
+                        >
+                          <MdDelete />
+                        </button> */}
+                        <button
+                          style={{ border: "0.8px solid red" }}
+                          onClick={() => {
+                            cartHandle(index);
                           }}
                         >
                           <MdDelete />
@@ -153,7 +132,7 @@ const CartBar = ({ dataCart, cartHandle }) => {
                 {dataCart.length !== 0
                   ? currency(
                       dataCart
-                        .map((e) => e.data.vepro_price)
+                        .map((e) => e.data.vepro_price * e.QtyProd)
                         .reduce((acc, curr) => {
                           return acc + curr;
                         })
@@ -175,7 +154,7 @@ const CartBar = ({ dataCart, cartHandle }) => {
                   ? currency(
                       calculateTax(
                         dataCart
-                          .map((e) => e.data.vepro_price)
+                          .map((e) => e.data.vepro_price * e.QtyProd)
                           .reduce((acc, curr) => {
                             return acc + curr;
                           }),

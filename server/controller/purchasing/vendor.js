@@ -176,7 +176,8 @@ const getGallery = async (req, res) => {
       ],
 
       offset: offset,
-      limit: limit,
+      // Edited
+      limit: 10,
       order: [["vepro_price", urutan], ["vepro_id"]],
     });
 
