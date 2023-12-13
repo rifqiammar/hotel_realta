@@ -11,7 +11,6 @@ const MainGallery = () => {
   const [dataCartTemp, setDataCartTemp] = useState([]);
   const [qtStat, setQtyStat] = useState(false);
 
-  const [dataCartName, setDataCartName] = useState("");
   const [qtyValue, setQtyValue] = useState(1);
 
   const setChartHandle = (data) => {
@@ -129,7 +128,7 @@ const MainGallery = () => {
             <CartBar qtStat={qtStat} dataCart={dataCart} cartHandle={cartHandle} qtyValue={qtyValue} />
           </div>
           <Footer />
-          <AddTocartModal setQtyStat={setQtyStat} setDataCart={setDataCart} dataCartTemp={dataCartTemp} qtyValue={qtyValue} setQtyValue={setQtyValue} dataCart={dataCart} dataCartName={dataCartName} />
+          <AddTocartModal setQtyStat={setQtyStat} setDataCart={setDataCart} dataCartTemp={dataCartTemp} qtyValue={qtyValue} setQtyValue={setQtyValue} dataCart={dataCart} />
         </div>
       </div>
       <a className="scroll-to-top rounded" href="#page-top">

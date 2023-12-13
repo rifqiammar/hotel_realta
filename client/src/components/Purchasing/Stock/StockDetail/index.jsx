@@ -29,6 +29,10 @@ const StockDetail = () => {
   }, [dispatch, deleteStat, status]);
 
   const deleteDataStockDetail = (id) => {
+    if (deleteStat) {
+      setDeleteStat(false);
+    }
+
     Swal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
